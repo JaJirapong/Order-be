@@ -1,6 +1,6 @@
 const moment = require('moment')
 const { createLogger, transports, format } = require('winston')
-const JWT = require('jsonwebtoken')
+
 const colors = require('colors')
 const util = require('util')
 const axios = require('axios')

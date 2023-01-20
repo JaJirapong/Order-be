@@ -1,14 +1,12 @@
 const Hapi = require('hapi')
 const Config = require('./src/config')
-const Logger = require('./logger')
 const log = require('./src/utils/log')
-const fs = require('fs')
 const mongoose = require("mongoose");
 
 const server = new Hapi.Server(Config.server.connection)
 
 mongoose
-  .connect("mongodb://localhost:27017/Mongo-Test-Node")
+  .connect("mongodb://127.0.0.1:27017/mydb")
   .then(() => {
     console.log("db started!");
   })
@@ -17,7 +15,7 @@ mongoose
   });
 
 server.ext('onRequest', function (request, h) {
-  log.info(`Request: ${request.method}, ${request.path}`);
+  log.info(`Request: ${request.method}, ${request.path}, ${request.payload}`);
   return h.continue;
 });
 
