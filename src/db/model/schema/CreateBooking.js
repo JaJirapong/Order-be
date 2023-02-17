@@ -1,24 +1,32 @@
 const Mongoose = require('mongoose')
+const Moment = require("moment-timezone")
+const dateThailand = Moment.tz(Date.now(), "Asia/Bangkok");
 
 const BookingSchema = new Mongoose.Schema(
-    {
+    {   bktable: {
+            type:String
+        },
         bkstatus: {
-            type: String
+            type: Boolean
         },
         bkname:{
             type: String
         },
         bknumber:{
-            type: String
+            type: String,
+            require: true
         },
         bktime:{
-            type: Date
-        },
-        bklate:{
             type: String
         },
-        bkarrive:{
-            type: Number
+        bklate:{
+            type: Boolean
+        },
+        bkcustomer:{
+            type: String
+        },
+        walkin:{
+            type: Date
         },
         checkin:{
             type: Date
@@ -29,6 +37,9 @@ const BookingSchema = new Mongoose.Schema(
         starttime:{
             type: Date
         },
+        customerType: {
+            type: String
+        }
     }
 )
 

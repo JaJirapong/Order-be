@@ -5,14 +5,16 @@ const TableSchema = new Mongoose.Schema(
         chair: {
             type: String
         },
-        table_id:{
-            type: String
+        bkstatus:{
+            type: Boolean
         },
-        status:{
-            type: String
-        },
+        inUse:{
+            type: Boolean
+        }
+        ,
         name:{
-            type: String
+            type: String,
+            unique: true
         }
     }
 )

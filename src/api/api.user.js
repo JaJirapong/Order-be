@@ -3,6 +3,12 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const { Error } = require('mongoose')
 const _ = require('underscore')
+const Moment = require("moment-timezone")
+const { date } = require('joi')
+const { format } = require('winston')
+// const multer  = require('multer')
+// const storage = multer.memoryStorage();
+// const upload = multer({ storage: storage });
 
 
 const jwt_secret = 'aawdklakfijklkgjkdfawd123132343232@#$@##dq'
@@ -27,7 +33,16 @@ const testfind = {
   auth: false,
   handler: async (request) => {
     try {
+      const { bktime } = request.payload
+      const time = Date.now()
+      const hour = Moment(time).format('H.mm')
       const bookData = await Books.find({name:"test"})
+      if(bktime < hour){
+          console.log("Hello!")
+          const TbUpdate = await Books.updateOneTable({bktable:"A2",bkstatus:false})
+      }
+      console.log(bktime)
+      console.log(hour)
       return bookData;
     } catch (err) {
       console.log(err)
@@ -42,7 +57,21 @@ const createmenu = {
   handler: async (request) => {
     try { 
       const { title , price, category, status, image, inform, category_id  } = request.payload
-      const books = {
+      if(_.isEmpty(category)){
+        const res ={
+          status: "Error",
+          text: "Catagory Name is emty!"
+        }
+        return res
+    }
+    if(_.isEmpty(category_id)){
+      const res ={
+        status: "Error",
+        text: "Catagory ID is emty!"
+      }
+      return res
+  }
+      const Menu = {
         title: `${title}`,
         price: `${price}`,
         category: `${category}`,
@@ -51,14 +80,14 @@ const createmenu = {
         image: `${image}`,
         inform: `${inform}`,
       }
-      const bookData = await Books.createmenu(books)
-      return bookData;
+      const MenuData = await Books.createmenu(Menu)
+      return MenuData;
     } catch (err) {
       console.log(err)
     }
   }
 }
-   // แสดงเมนู ด้วยหมวดหมู่
+  // แสดงเมนู ด้วยหมวดหมู่
 const findmenu = {
   auth: false,
   handler: async (request) => {
@@ -71,7 +100,7 @@ const findmenu = {
     }
   }
 }
-  //  แสดง 1 เมนู ด้วย ID
+  // แสดง 1 เมนู ด้วย ID
 const findOnemenu ={
   auth: false,
   handler: async (request) => {
@@ -88,41 +117,45 @@ const findOnemenu ={
     }
   }
 }
-  // ลบเมนู
+  // ลบทีละหลายเมนู
 const deletemenu ={
   auth: false,
   handler: async (request) => {
     try {
-      const { _id } = request.payload
-      const onemenu = await Books.deleteMenu({_id})
-      const del = {
-           status: "ok",
-           message: "Item Deleted!!"
+      const { data } = request.payload
+      let isDelete = false
+      for(const {_id} of data){
+        console.log(_id)
+        const Delete = await Books.deleteMenu({_id})
+        console.log(Delete)
+        if( Delete.deletedCount == 1){
+          isDelete = true
+         }
       }
-      return del
-    } catch(err) {
-       console.log(err)
+      return isDelete
+    } catch (err) {
+      console.log(err)
     }
   }
 }
-  //อัพเดท เมนู
+  // อัพเดท เมนู
 const updateMenu = {
   auth: false,
   handler: async (request) => {
     try {
-      const { id , price , inform} = request.payload
-      const Udate = await Books.updateOnemenu({id,price,inform})
+      const { _id , price , inform} = request.payload
+      const Udate = await Books.updateOnemenu({_id,price,inform})
       return Udate
     } catch (err) {
       console.log(err)
     }
   }
 }
-
 // Menu End
 
+
 // Admin Start
- //สร้าง Admin (ยังไม่รู้ว่า ใครเข้าใช้)
+// สร้าง Admin (ยังไม่รู้ว่า ใครเข้าใช้)
 const createadmin = {
   auth: false,
   handler: async (request) => {
@@ -222,8 +255,7 @@ const deleteAdmin ={
     }
   }
 }
-
-//แสดง admin ทั้งหมด (ใช้ได้เฉพาะ ระดับ ผู้จัดการร้านขึ้นไป)
+// แสดง admin ทั้งหมด (ใช้ได้เฉพาะ ระดับ ผู้จัดการร้านขึ้นไป)
 const findadmin = {
   auth: false,
   handler: async (request) => {
@@ -237,22 +269,28 @@ const findadmin = {
 }
 //Admin End
 
+
 //Order Start
-  //สร้าง Order
+//สร้าง Order รับข้อมูลแบบ Array เพื่อรองรับการสั่งทีละเยอะๆ ของลูกค้า
 const createorder = {
   auth: false,
   handler: async (request) => {
     try {
-      const { total, status, tbname ,title } = request.payload
-
-      const orders = {
-        total: `${total}`,
-        status: `${status}`,
-        tbname: `${tbname}`,
-        title: `${title}`,
+      const { data } = request.payload
+      let isCreate = "ยังไม่ได้สร้าง Order ขอรับ"
+      for(const {total, tbname ,title} of data){
+        const orders = {
+          total: `${total}`,
+          status: true,
+          tbname: `${tbname}`,
+          title: `${title}`,
+        }
+        if(await !_.isEmpty(data)){
+          isCreate = "สร้าง Order แล้วขอรับ"
       }
-      const bookData = await Books.createOrder(orders)
-      return bookData;
+        const bookData = await Books.createOrder(orders)
+      }
+      return isCreate;
         } catch (err) {
       console.log(err)
         }
@@ -271,72 +309,234 @@ const Order = {
     }
   }
 }
+// แสดง order ทั้งหมดที่ลูกค้าสั่ง ที่ยังไม่ได้ส่ง  ให้ครัวดู
+const AllOrder = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const bookData = await Books.FinishOrder({})
+      return bookData;
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
 
-//ครัวอัพเดทสถานะ ออร์เดอร์
+const getOrders = {
+  auth: false,
+  handler: async (request, h) => {
+    try {
+      const getTables = await Books.findTable({})
+      let Orders = []
+      const getOrders = getTables.map( async val => {
+        const Order = await Books.findOrder({tbname:val.name})
+        if(!_.isEmpty(Order)){
+          Orders.push({tbname : val.name,
+            order : Order})
+          return null
+        }
+      })
+      // คำสั่ง ให้ทำ Promise ทั้งหมดให้เส็จ(ไม่ได้ใช้)
+      const SendOrders = await Promise.all(getOrders)
+      return Orders
+    } catch (error) {
+      log.error(error)
+      const res = Response.implementError(transaction, lang)
+      return h.response(res).code(500)
+    }
+  }
+}
+
+// ครัวอัพเดทสถานะ ออร์เดอร์
 const Order_statusUpdate = {
   auth: false,
   handler: async (request) => {
     try {
-      const { _id, status} = request.payload
-      const Udate = await Books.upOrderStatus({_id,status})
-      return Udate
+      const { data } = request.payload
+      let isUpdate = false
+      for(let {_id}of data){
+        const Update = await Books.upOrderStatus({_id,status:false})
+        if(Update.modifiedCount == 1){
+           isUpdate = true
+        }
+      }
+      return isUpdate
     } catch (err) {
       console.log(err)
-    }
-  }
-}
-
-// อัพเดท ออร์เดอร์ โดยลูกค้าสามารถเปลี่ยน จำนวนที่สั่ง ในตะกร้า ได้
-const updateOrder = {
-  auth: false,
-  handler: async (request) => {
-    try {
-      const { id, total} = request.payload
-      const Udate = await Books.updateOrder({id,total})
-      return Udate
-    } catch (err) {
-      console.log(err)
-    }
-  }
-}
-
-// ลบออร์เดอร์ ลูกค้าลบออร์เดอร์
-const deleteOrder ={
-  auth: false,
-  handler: async (request) => {
-    try {
-      const { _id } = request.payload
-      const onemenu = await Books.deleteOrder({_id})
-      return onemenu
-    } catch(err) {
-       console.log(err)
     }
   }
 }
 //Order End
 
+
 //booking start
-  //สร้าง Cooking
+  //สร้าง Booking
 const createbooking = {
   auth: false,
   handler: async (request) => {
     try {
-      const { bkstatus, bkname ,bknumber, bktime, bklate, bkarrive, checkin, checkout, starttime } = request.payload
-      const booking = {
-        bkstatus: `${bkstatus}`,
-        bkname: `${bkname}`,
-        bknumber: `${bknumber}`,
-        bktime: `${bktime}`,
-        bklate: `${bklate}`,
-        bkarrive: `${bkarrive}`,
-        checkin: `${checkin}`,
-        checkout: `${checkout}`,
-        starttime: `${starttime}`,
-      }
-      const bookData = await Books.createBooking(booking)
-      return bookData;
+      const { bktable, bkname ,bknumber, bkcustomer,bktime ,isWalkIn , isBooking} = await request.payload
+      if(_.isEmpty(bktable)){
+        const res ={
+          status: "Error",
+          text: "ชื่อโต้ะ is emty!"
+        }
+        return res
+       }
+
+       if(bknumber.length<10){
+        const res = {
+            error:"ค่าที่ใส่มา มีความยาวน้อยกว่า 10"
+        }
+        return res
+        }
+       if(bknumber.length>10){
+       const res = {
+            error:"ค่าที่ใส่มา มีความยาวมากกว่า 10"
+        }
+       return res
+        }
+
+       if(isBooking === true){         
+       const booking = {
+         bktable:`${bktable}`,
+         bkstatus: true,
+         bkname: `${bkname}`,
+         bknumber: `${bknumber}`,
+         bklate: false,
+         bktime:`${bktime}`,
+         bkcustomer: `${bkcustomer}`,
+         customerType: "ลูกค้า Booking"
+       }
+       const bookData = await Books.createBooking(booking)
+       const upDateTable = await Books.updateOneTable({bktable:booking.bktable,bkstatus:booking.bkstatus})
+       return bookData;
+       }
+
+       if(isWalkIn === true){
+        const booking = {
+          bktable: `${bktable}`,
+          bkstatus: true,
+          bkname: `${bkname}`,
+          bknumber: `${bknumber}`,
+          bklate: false,
+          checkin: Date.now(),
+          walkin: Date.now(),
+          bkcustomer: `${bkcustomer}`,
+          customerType: "ลูกค้า Walk In",
+          inUse: true
+        }
+        const bookData = await Books.createBooking(booking)
+        const upDateTable = await Books.updateOneTable({bktable:booking.bktable,bkstatus:booking.bkstatus,inUse:booking.inUse})
+        return bookData;
+       }
+
     } catch (err) {
       console.log(err)
+    }
+  }
+}
+  // Update สถานะ bklate เป็น true สถานะการจอง = false  เพื่อแจ้งว่าลูกค้าคนนี้มาช้า (admin ตัดสินใจเอง)
+const updateBklate = {
+    auth: false,
+    handler: async (request) => {
+      try {
+        const { _id, bktable } = request.payload
+          const Update = await Books.update_bkstatus({_id,bklate:true, bkstatus: false})
+          const upDateTable = await Books.updateOneTable({bktable, bkstatus:false})
+        return {Update,upDateTable}
+      } catch (err) {
+        console.log(err)
+      }
+    }
+  }
+
+  //แสดง Booking ทั้งหมด
+const findAllBooking = {
+    auth: false,
+    handler: async (request) =>{
+      try {
+        const {bktable} = request.payload
+        const BookingData = await Books.findAllBooking({bktable})
+        return BookingData;
+      } catch (err) {
+        console.log(err)
+      }
+    }
+}
+  //ใช้อัพเดทสถานะ bkstatus ของ booking กับ table เพื่อบอกว่า ลูกค้า Check Out แล้วและ โต้ะว่างแล้ว (น่าทำงานตอนเช็คเอ้าท)
+const bkstatus_update = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { _id, bktable, isCheckIn , isCheckOut} = request.payload
+      const bkstatus = false , use = true , notUse = false
+      const checkOut = Date.now()
+      const checkIn = Date.now()
+      if(isCheckIn === true){
+        const BKUpdate = await Books.update_bkstatus({_id,checkIn})
+        const TbUpdate = await Books.updateOneTable({bktable,inUse:use})
+        return "Booking Check In !!"
+      }
+      if(isCheckOut === true){
+        const BKUpdate = await Books.update_bkstatus({_id,bkstatus,checkOut})
+        const TbUpdate = await Books.updateOneTable({bktable,inUse:notUse,bkstatus})
+        return "Booking and Table สถานะการ booking อัพเดทแล้ว"
+      }
+      return "Error ไม่ใช่ทั้ง Check In และ Check Out"
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+  //แสดง 1 Booking
+const findOneBooking = {
+  auth: false,
+  handler: async (request) =>{
+    try {
+      const {bktable,bktime} = request.payload
+      console.log(bktable,bktime)
+      let res = ""
+      if(_.isEmpty(bktime)){
+        res = " ขาดตัวแปรเวลา หน่ะ ไม่ต้องกังวล"
+        return res
+      }
+      if(!_.isEmpty(bktable)&&!_.isEmpty(bktime)){
+        const OneBooking = await Books.findOneBooking({bktable,bktime})
+        console.log(OneBooking)
+        return OneBooking
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+const findOneWalkin = {
+  auth: false,
+  handler: async (request) =>{
+    try {
+      const {bktable} = request.payload
+        console.log(bktable)
+        const walk = "ลูกค้า Walk In" 
+        const OneBooking = await Books.findOneWalkin({bktable,walk})
+        console.log(OneBooking)
+        return OneBooking
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+  // Delete booking หน่ะ (คนที่ได้ใช้ได้ น่าจะระดับ Manager ไม่ก็ Owner เพราะมันต้องเอาข้อมูลไปทำ รายงาน Admin ไม่ควรลบได้)
+const deleteBooking = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { _id } = request.payload
+      const deleteBooking = await Books.deleteBooking({_id})
+      return deleteBooking
+    } catch(err) {
+       console.log(err)
     }
   }
 }
@@ -411,11 +611,12 @@ const updateCategory = {
        console.log(isUpdate)
       }
       return isUpdate
-    } catch (err) {
+    } catch(err) {
       console.log(err)
     }
   }
 }
+
 const deleteCategory = {
   auth: false,
   handler: async (request) => {
@@ -430,21 +631,145 @@ const deleteCategory = {
 }
 // Category End
 
-//table start
+// bookingTime
+const createTime = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { bktime } = request.payload
+      const time = {
+        bktime: `${bktime}`
+      }
+      const res = "กรุณาใส่เวลา"
+      if(!_.isEmpty(bktime)){
+        const Data = await Books.createTime(time)
+        return Data
+      }
+      if(_.isEmpty(bktime)){
+        return res
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
 
+const findBktime = {
+  auth: false,
+  handler: async (request) =>{
+    try {
+      const Time = await Books.findBktime({})
+      return Time;
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+const Bktime = {
+  auth: false,
+  handler: async (request) =>{
+    try {
+      const { bktable } = request.payload
+      const Time = await Books.findBktime({})
+      let res = ""
+      const Booking = await Books.findTableBooking({bktable})
+      let BookingTime = []
+      if (_.isEmpty(Booking)){
+          res = " อาจจะไม่มี Booking หรือ หาไม่เจอ "
+          return res
+      }
+      console.log("Booking :",Booking)
+      const getBooking = Time.map( val => {
+        console.log(" เวลาจากตาราง ",val.bktime)
+        if(val.bktime !== Booking[0].bktime){
+          BookingTime.push({bktime:val.bktime})
+          return null
+        }
+      })
+      console.log("ผลลัพธ์ :",BookingTime)
+      return BookingTime
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+const deleteBktime = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { data } = request.payload
+      let isDelete = "ยังไม่ได้ลบ"
+      for (let _id of data) {
+        const deleteTime = await Books.deleteBktime({_id})
+        if(deleteTime.deletedCount == 1){
+          isDelete = "ลบแล้วครับ"
+        }
+      }
+      return isDelete
+    } catch(err) {
+       console.log(err)
+    }
+  }
+}
+//
+
+
+//table start
 //สร้าง Table
 const createtable = {
   auth: false,
   handler: async (request) => {
     try {
-      const { chair, status ,name} = request.payload
-      const booking = {
+      const { chair ,name} = request.payload
+      if(_.isEmpty(chair)){
+        const res ={
+          status: "Error",
+          text: "Table Name is emty!"
+        }
+        return res
+    }
+    if(_.isEmpty(name)){
+      const res ={
+        status: "Error",
+        text: "Chair amount is emty!"
+      }
+      return res
+  }
+      const table = {
         chair: `${chair}`,
-        status: `${status}`,
+        bkstatus: false,
         name: `${name}`,
       }
-      const bookData = await Books.createTable(booking)
-      return bookData;
+      const CreateTable = await Books.createTable(table)
+      return CreateTable;
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+ //Find Table
+const findTable = {
+  auth: false,
+  handler: async (request) =>{
+    try {
+      const Table = await Books.findTable({})
+      return Table;
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+// เอาไว้อัพเดท bkstatus โดยทำงานคู่กับ Create Booking สร้างบุ้คกิ้งปุ้บ ก็ให้อัพเดทว่า โต้ะ โดนจองแล้ว (ไม่ได้ใช้)
+const updateTable = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { _id, bkstatus} = request.payload
+      const upDateTable = await Books.updateOneTable({_id,bkstatus})
+      return upDateTable
     } catch (err) {
       console.log(err)
     }
@@ -459,7 +784,7 @@ const createshop = {
   handler: async (request) => {
     try {
       const { name, opentime ,closetime, image, phonenumber, facebook, line} = request.payload
-      const booking = {
+      const Shop = {
         name: `${name}`,
         opentime: `${opentime}`,
         closetime: `${closetime}`,
@@ -468,8 +793,34 @@ const createshop = {
         facebook: `${facebook}`,
         line: `${line}`,
       }
-      const bookData = await Books.createShop(booking)
-      return bookData;
+      const CreateShop = await Books.createShop(Shop)
+      return CreateShop;
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+const findShop = {
+  auth: false,
+  handler: async (request) =>{
+    try {
+      const Table = await Books.findShop({})
+      return Table;
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+// Update Shop (ยังไม่ได้เอาไปใช้งาน)
+const UpdateShop = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const {_id, opentime, closetime, image, phonenumber, facebook, line} = request.payload
+      const upDateTable = await Books.updateShop({_id,opentime, closetime, image, phonenumber, facebook, line})
+      return upDateTable
     } catch (err) {
       console.log(err)
     }
@@ -483,8 +834,9 @@ module.exports = {
   createmenu, findOnemenu,  findmenu, updateMenu, deletemenu,
   createadmin, authadmin,  findadmin, deleteAdmin,
   createCategory, findCategory, updateCategory, deleteCategory,
-  createorder, Order, updateOrder, deleteOrder, Order_statusUpdate,
-  createbooking,
-  createtable,
-  createshop
+  createorder, Order, AllOrder, getOrders, Order_statusUpdate,
+  createbooking, findAllBooking, findOneBooking, findOneWalkin, deleteBooking, bkstatus_update,updateBklate,
+  createTime, findBktime, Bktime, deleteBktime,
+  createtable, updateTable, findTable,
+  createshop, findShop, UpdateShop
 }

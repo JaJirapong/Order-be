@@ -6,7 +6,7 @@ const OrderSchema = new Mongoose.Schema(
             type: String
         },
         status:{
-            type: String
+            type: Boolean
         },
         tbname:{
             type: String

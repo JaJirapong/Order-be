@@ -3,7 +3,8 @@ const Mongoose = require('mongoose')
 const ShopSchema = new Mongoose.Schema(
     {
         name: {
-            type: String
+            type: String,
+            unique: true
         },
         opentime:{
             type: String

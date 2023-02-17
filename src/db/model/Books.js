@@ -6,8 +6,10 @@ const booking = require('./schema/CreateBooking')
 const table = require('./schema/CreateTable')
 const shop = require('./schema/CreateShop')
 const Category = require('./schema/CreateCategory')
+const CreateTime = require('./schema/CreateBkTime')
 
 const Promise = require('bluebird')
+const { query } = require('winston')
 
 
 
@@ -37,6 +39,7 @@ const find = (query = {}) => {
 // Menu Start
 const createmenu = (data) => {
     return new Promise((resolve, reject) => {
+        console.log(data)
         const books = new Menu(data)
         books.save(async (err, result) => {
             if (err) reject(err)
@@ -71,7 +74,7 @@ const findOnemenu = (query = {}) => {
 
 const updateOnemenu = (query = {}) => {
     return new Promise((resolve, reject) => {
-        const id = query.id
+        const id = query._id
         const price = query.price
         const inform = query.inform
             Menu.updateOne({_id:id},{$set:{
@@ -103,6 +106,7 @@ const deleteMenu = (query = {}) => {
 //Admin Start
 const createAdmin = (data) => {
     return new Promise((resolve, reject) => {
+        console.log(data)
         const books = new Admin(data)
         books.save(async (err, result) => {
             if (err) reject(err)
@@ -164,6 +168,7 @@ const deleteAdmin = (query = {}) => {
 //order Start
 const createOrder = (data) => {
     return new Promise((resolve, reject) => {
+        console.log(data)
         const books = new Order(data)
         books.save(async (err, result) => {
             if (err) reject(err)
@@ -172,38 +177,21 @@ const createOrder = (data) => {
     })
 }
 
-const updateOrder= (query = {}) => {
-    return new Promise((resolve, reject) => {
-        const id = query.id
-        const total = query.total
-        console.log(id, total)
-        Order.updateOne({_id:id},{$set:{
-                     total: total
-        }})
-            .then((result) => {
-                resolve(result)
-            })
-            .catch((err) => {
-                reject(err)
-            })
-    })
-}
-
-const deleteOrder = (query = {}) => {
-    return new Promise((resolve, reject) => {
-        Order.deleteOne(query)
-            .then((result) => {
-                resolve(result)
-            })
-            .catch((err) => {
-                reject(err)
-            })
-    })
-}
-
 const findOrder = (query = {}) => {
     return new Promise((resolve, reject) => {
-        Order.find(query)
+        Order.find(query).where("status").equals(true)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const FinishOrder = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        Order.find(query).where("status").equals(false)
             .then((result) => {
                 resolve(result)
             })
@@ -233,6 +221,7 @@ const upOrderStatus = (query = {}) => {
 //booking start
 const createBooking = (data) => {
     return new Promise((resolve, reject) => {
+        console.log(data)
         const books = new booking(data)
         books.save(async (err, result) => {
             if (err) reject(err)
@@ -240,11 +229,128 @@ const createBooking = (data) => {
         })
     })
 }
+
+const findAllBooking = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        booking.find(query).where("bkstatus").equals(true).where("bktable").equals(`${query.bktable}`)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const findOneBooking = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        booking.where("bktable").equals(`${query.bktable}`).where("bktime").equals(`${query.bktime}`).where("bkstatus").equals(true)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const findOneWalkin = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        booking.findOne().where("bktable").equals(`${query.bktable}`).where("customerType").equals(`${query.walk}`).where("bkstatus").equals(true)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const findTableBooking = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        booking.where("bktable").equals(`${query.bktable}`).where("bkstatus").equals(true)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const update_bkstatus = (query = {}) =>{
+    return new Promise((resolve, reject) => {
+            console.log(query)
+            booking.updateOne({_id:query._id},{$set:{
+                bkstatus: query.bkstatus,
+                checkout: query.checkOut,
+                bklate: query.bklate,
+                checkin: query.checkIn
+      }})
+          .then((result) => {
+              resolve(result)
+          })
+          .catch((err) => {
+              reject(err)
+          })
+    })
+}
+
+
+const deleteBooking = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        booking.deleteOne(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
 //booking end
+
+// Bktime
+const createTime = (data) => {
+    return new Promise((resolve, reject) => {
+        const books = new CreateTime(data)
+        books.save(async (err, result) => {
+            if (err) reject(err)
+            resolve(result)
+        })
+    })
+}
+
+const findBktime = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        CreateTime.find(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const deleteBktime = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        CreateTime.deleteOne(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+//
+
 
 // Category start
 const createCategory = (data) => {
     return new Promise((resolve, reject) => {
+        console.log(data)
         const books = new Category(data)
         books.save(async (err, result) => {
             if (err) reject(err)
@@ -295,6 +401,7 @@ const upCategorystatus = (query = {}) => {
 //table start
 const createTable = (data) => {
     return new Promise((resolve, reject) => {
+        console.log(data)
         const books = new table(data)
         books.save(async (err, result) => {
             if (err) reject(err)
@@ -302,16 +409,76 @@ const createTable = (data) => {
         })
     })
 }
+
+const findTable = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        table.find(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const updateOneTable = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        console.log(query)
+         table.updateOne({name:query.bktable},{$set:{
+            bkstatus: query.bkstatus,
+            inUse: query.inUse
+  }})
+          .then((result) => {
+              resolve(result)
+          })
+          .catch((err) => {
+              reject(err)
+          })
+    })
+}
 //table end
 
 //shop start
 const createShop = (data) => {
     return new Promise((resolve, reject) => {
+        console.log(data)
         const books = new shop(data)
         books.save(async (err, result) => {
             if (err) reject(err)
             resolve(result)
         })
+    })
+}
+
+const findShop = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        shop.findOne(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const updateShop = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        shop.updateOne({_id:query._id},{$set:{
+            opentime: query.opentime,
+            closetime: query.closetime,
+            image: query.image,
+            phonenumber: query.phonenumber,
+            facebook: query.facebook,
+            line: query.line
+  }})
+          .then((result) => {
+              resolve(result)
+          })
+          .catch((err) => {
+              reject(err)
+          })
     })
 }
 //shop end
@@ -323,9 +490,10 @@ module.exports = {
     createmenu,  findmenu, findOnemenu, updateOnemenu, deleteMenu,
     createAdmin,  findAdmin, findallAdmin, deleteAdmin,
     createCategory, findCategory, upCategorystatus, deleteCategory,
-    createOrder, findOrder, updateOrder, deleteOrder, upOrderStatus,
-    createBooking,
-    createTable,
-    createShop,
+    createOrder, findOrder, FinishOrder, upOrderStatus,
+    createBooking, findAllBooking,findTableBooking, findOneWalkin, findOneBooking, deleteBooking, update_bkstatus,
+    createTime, findBktime, deleteBktime,
+    createTable, updateOneTable, findTable,
+    createShop, findShop, updateShop,
     
 }

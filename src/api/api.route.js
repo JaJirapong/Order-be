@@ -8,7 +8,7 @@ const routes = [
     },
 
     {
-        method: 'GET',
+        method: 'POST',
         path: '/test-find',
         config: API.testfind
     },
@@ -79,18 +79,18 @@ const routes = [
     },
     {
         method: 'POST',
-        path: '/update-order',
-        config: API.updateOrder
-    },
-    {
-        method: 'POST',
-        path: '/delete-order',
-        config: API.deleteOrder
-    },
-    {
-        method: 'POST',
         path: '/update-order-status',
         config: API.Order_statusUpdate
+    },
+    {
+        method: 'POST',
+        path: '/All-Order',
+        config: API.AllOrder
+    },
+    {
+        method: 'POST',
+        path: '/get-Orders',
+        config: API.getOrders
     },
     //Order End
 
@@ -99,6 +99,56 @@ const routes = [
         method: 'POST',
         path: '/create-booking',
         config: API.createbooking
+    },
+    {
+        method: 'POST',
+        path: '/booking',
+        config: API.findAllBooking
+    },
+    {
+        method: 'POST',
+        path: '/delete-booking',
+        config: API.deleteBooking
+    },
+    {
+        method: 'POST',
+        path: '/FindOne-booking',
+        config: API.findOneBooking
+    },
+    {
+        method: 'POST',
+        path: '/booking_status-update',
+        config: API.bkstatus_update
+    },
+    {
+        method: 'POST',
+        path: '/late_status-update',
+        config: API.updateBklate
+    },
+    {
+        method: 'POST',
+        path: '/Create_time',
+        config: API.createTime
+    },
+    {
+        method: 'POST',
+        path: '/Find_WalkIn',
+        config: API.findOneWalkin
+    },
+    {
+        method: 'POST',
+        path: '/Find_time',
+        config: API.findBktime
+    },
+    {
+        method: 'POST',
+        path: '/booking_time',
+        config: API.Bktime
+    },
+    {
+        method: 'POST',
+        path: '/Delete_time',
+        config: API.deleteBktime
     },
     //booking  end
 
@@ -131,6 +181,16 @@ const routes = [
         path: '/create-table',
         config: API.createtable
     },
+    {
+        method: 'POST',
+        path: '/findAll-table',
+        config: API.findTable
+    },
+    {
+        method: 'POST',
+        path: '/update-table',
+        config: API.updateTable
+    },
     //table end
 
     //shop start
@@ -138,6 +198,16 @@ const routes = [
         method: 'POST',
         path: '/create-shop',
         config: API.createshop
+    },
+    {
+        method: 'POST',
+        path: '/update-shop',
+        config: API.UpdateShop
+    },
+    {
+        method: 'POST',
+        path: '/show-shop',
+        config: API.findShop
     },
     //shopend
 ]

@@ -18,7 +18,8 @@ const MenuSchema = new Mongoose.Schema(
             type: Boolean
         },
         image: { 
-            type: String
+            data: Buffer,
+            contentType: String
          },
         inform:{
             type: String
