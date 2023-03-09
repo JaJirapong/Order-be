@@ -13,7 +13,7 @@ const { query } = require('winston')
 
 
 
-
+// Test------------------------------------------
 const create = (data) => {
     return new Promise((resolve, reject) => {
         const books = new Books(data)
@@ -23,7 +23,17 @@ const create = (data) => {
         })
     })
 }
-
+const TestDel = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        Order.deleteMany(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
 const find = (query = {}) => {
     return new Promise((resolve, reject) => {
         Books.find(query)
@@ -35,11 +45,14 @@ const find = (query = {}) => {
             })
     })
 }
+// Test-------------------------------------------
+
+
+
 
 // Menu Start
 const createmenu = (data) => {
     return new Promise((resolve, reject) => {
-        console.log(data)
         const books = new Menu(data)
         books.save(async (err, result) => {
             if (err) reject(err)
@@ -62,7 +75,7 @@ const findmenu = (query = {}) => {
 
 const findOnemenu = (query = {}) => {
     return new Promise((resolve, reject) => {
-        Menu.findOne(query)
+        Menu.findOne().where("_id").equals(query._id)
             .then((result) => {
                 resolve(result)
             })
@@ -73,13 +86,11 @@ const findOnemenu = (query = {}) => {
 }
 
 const updateOnemenu = (query = {}) => {
+    console.log(query)
     return new Promise((resolve, reject) => {
-        const id = query._id
-        const price = query.price
-        const inform = query.inform
-            Menu.updateOne({_id:id},{$set:{
-                price: price,
-                inform: inform
+            Menu.updateOne({_id:query._id},{$set:{
+                price: query.price,
+                inform: query.inform
       }})
           .then((result) => {
               resolve(result)
@@ -191,7 +202,7 @@ const findOrder = (query = {}) => {
 
 const FinishOrder = (query = {}) => {
     return new Promise((resolve, reject) => {
-        Order.find(query).where("status").equals(false)
+        Order.find(query).where("status").equals(true)
             .then((result) => {
                 resolve(result)
             })
@@ -202,6 +213,7 @@ const FinishOrder = (query = {}) => {
 }
 
 const upOrderStatus = (query = {}) => {
+    console.log(query)
     return new Promise((resolve, reject) => {
         const id = query._id
         const status = query.status
@@ -233,6 +245,19 @@ const createBooking = (data) => {
 const findAllBooking = (query = {}) => {
     return new Promise((resolve, reject) => {
         booking.find(query).where("bkstatus").equals(true).where("bktable").equals(`${query.bktable}`)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const findBookingRP = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        console.log(query)
+        booking.where("checkout").gte(query.start).where("checkout").lte(query.end).where("bktable").equals(query.bktable)
             .then((result) => {
                 resolve(result)
             })
@@ -484,7 +509,7 @@ const updateShop = (query = {}) => {
 //shop end
 
 module.exports = {
-    create,
+    create,TestDel,
     find,
     findOne,
     createmenu,  findmenu, findOnemenu, updateOnemenu, deleteMenu,
@@ -495,5 +520,6 @@ module.exports = {
     createTime, findBktime, deleteBktime,
     createTable, updateOneTable, findTable,
     createShop, findShop, updateShop,
+    findBookingRP
     
 }

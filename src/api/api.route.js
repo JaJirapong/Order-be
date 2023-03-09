@@ -6,6 +6,11 @@ const routes = [
         path: '/test-get',
         config: API.userSignUp
     },
+    {
+        method: 'POST',
+        path: '/test-delete',
+        config: API.Delete
+    },
 
     {
         method: 'POST',
@@ -26,8 +31,8 @@ const routes = [
     },
     {
         method: 'POST',
-        path: '/menu',
-        config: API.findOnemenu
+        path: '/all-menu',
+        config: API.findAllmenu
     },
     {
         method: 'POST',
@@ -75,7 +80,7 @@ const routes = [
     {
         method: 'POST',
         path: '/order',
-        config: API.Order
+        config: API.oneOrder
     },
     {
         method: 'POST',
@@ -85,7 +90,7 @@ const routes = [
     {
         method: 'POST',
         path: '/All-Order',
-        config: API.AllOrder
+        config: API.customerOrder
     },
     {
         method: 'POST',
@@ -210,6 +215,18 @@ const routes = [
         config: API.findShop
     },
     //shopend
+     
+    {
+        method: 'POST',
+        path: '/report-and-excel',
+        config: API.excelFile
+    },
+
+    {
+        method: 'POST',
+        path: '/QR-code',
+        config: API.getQRcode
+    },
 ]
 
 module.exports = routes

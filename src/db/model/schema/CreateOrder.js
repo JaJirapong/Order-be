@@ -11,9 +11,13 @@ const OrderSchema = new Mongoose.Schema(
         tbname:{
             type: String
         },
-        title :{
+        menuId :{
+            type: String
+        },
+        bookingId :{
             type: String
         }
+
     }
 )
 

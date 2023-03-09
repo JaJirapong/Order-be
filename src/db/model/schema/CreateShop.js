@@ -12,10 +12,12 @@ const ShopSchema = new Mongoose.Schema(
         closetime:{
             type: String
         },
-        image:{
-            data: Buffer,
-            contentType: String
-        },
+        pathImage: { 
+            type: String
+         },
+         imgName: { 
+            type: String
+         },
         phonenumber:{
             type: String
         },

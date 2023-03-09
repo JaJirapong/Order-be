@@ -4,8 +4,15 @@ const jwt = require('jsonwebtoken')
 const { Error } = require('mongoose')
 const _ = require('underscore')
 const Moment = require("moment-timezone")
+const moment = require('moment')
 const { date } = require('joi')
 const { format } = require('winston')
+const fs = require('fs')
+const excel = require('excel4node');
+const end = require('date-fns/endOfDay')
+const start = require('date-fns/startOfDay')
+const { indexOf } = require('underscore')
+const QRcode = require('qrcode')
 // const multer  = require('multer')
 // const storage = multer.memoryStorage();
 // const upload = multer({ storage: storage });
@@ -50,13 +57,28 @@ const testfind = {
   }
 }
 
-// Menu Start
+// test Delete
+const Delete = {
+  auth: false,
+  handler: async (request) => {
+    try {
+          const Delete = await Books.TestDel({bkstatus:false})
+      return "Delete To!";
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+
+
+// Menu Start -------------------------------------------------------------------------------------------------------
    // สร้าง Menu
 const createmenu = {
   auth: false,
   handler: async (request) => {
     try { 
-      const { title , price, category, status, image, inform, category_id  } = request.payload
+      const { title , price, category, status, pathImage,imgName , inform, category_id  } = request.payload
       if(_.isEmpty(category)){
         const res ={
           status: "Error",
@@ -77,7 +99,8 @@ const createmenu = {
         category: `${category}`,
         category_id:`${category_id}`,
         status: `${status}`,
-        image: `${image}`,
+        imgName: `${imgName}`,
+        pathImage: `${pathImage}`,
         inform: `${inform}`,
       }
       const MenuData = await Books.createmenu(Menu)
@@ -100,20 +123,15 @@ const findmenu = {
     }
   }
 }
-  // แสดง 1 เมนู ด้วย ID
-const findOnemenu ={
+
+const findAllmenu = {
   auth: false,
   handler: async (request) => {
     try {
-      const { _id } = request.payload
-      const onemenu = await Books.findOnemenu({_id})
-      const menu = {
-        image: onemenu.image,
-        title: onemenu.title
-      }
-      return menu
-    } catch(err) {
-       console.log(err)
+      const menus = await Books.findmenu({})
+      return menus;
+    } catch (err) {
+      console.log(err)
     }
   }
 }
@@ -151,10 +169,12 @@ const updateMenu = {
     }
   }
 }
-// Menu End
+// Menu End -----------------------------------------------------------------------------------------------------------------
 
 
-// Admin Start
+
+
+// Admin Start ------------------------------------------------------------------------------------------------------------------
 // สร้าง Admin (ยังไม่รู้ว่า ใครเข้าใช้)
 const createadmin = {
   auth: false,
@@ -178,7 +198,7 @@ const createadmin = {
       }
       if (password.length < 5){
         const res = {
-            text: 'Pass word need at leat 5 character',
+            text: 'Pass word need at least 5 character',
             error: true
         }
         return res
@@ -231,6 +251,12 @@ const authadmin = {
           position: AdminData.position,
           auth : true
         }
+        // ส่งข้อมูลแบบ Token (ยังทำไม่ได้ //)
+        const token = jwt.sign({
+          id: AdminData._id,
+          position: AdminData.position
+        },jwt_secret)
+        
         return data
       }
     } catch (err) {
@@ -238,7 +264,7 @@ const authadmin = {
     }
   }
 }
-// ระดับ ผู้จัดการ ถึงจะใช้เส้นนี้ได้
+// ผู้ใช้ระดับไหนถึงจะใช้เส้นนี้ได้ (ผู้จัดการ?)
 const deleteAdmin ={
   auth: false,
   handler: async (request) => {
@@ -255,7 +281,7 @@ const deleteAdmin ={
     }
   }
 }
-// แสดง admin ทั้งหมด (ใช้ได้เฉพาะ ระดับ ผู้จัดการร้านขึ้นไป)
+// แสดง admin ทั้งหมด
 const findadmin = {
   auth: false,
   handler: async (request) => {
@@ -267,10 +293,12 @@ const findadmin = {
     }
   }
 }
-//Admin End
+//Admin End ----------------------------------------------------------------------------------------------------------------------
 
 
-//Order Start
+
+
+//Order Start -----------------------------------------------------------------------------------------------------------------------
 //สร้าง Order รับข้อมูลแบบ Array เพื่อรองรับการสั่งทีละเยอะๆ ของลูกค้า
 const createorder = {
   auth: false,
@@ -278,14 +306,15 @@ const createorder = {
     try {
       const { data } = request.payload
       let isCreate = "ยังไม่ได้สร้าง Order ขอรับ"
-      for(const {total, tbname ,title} of data){
+      for(const {total, tbname ,id, idBK} of data){
         const orders = {
           total: `${total}`,
           status: true,
           tbname: `${tbname}`,
-          title: `${title}`,
+          menuId: `${id}`,
+          bookingId: idBK
         }
-        if(await !_.isEmpty(data)){
+        if(!_.isEmpty(data)){
           isCreate = "สร้าง Order แล้วขอรับ"
       }
         const bookData = await Books.createOrder(orders)
@@ -297,20 +326,33 @@ const createorder = {
   }
 }
 // แสดง Order ที่ลูกค้าสั่ง โดยใช้ ชื่อโต้ะ เป็นตัวค้นหา
-const Order = {
+const oneOrder = {
   auth: false,
   handler: async (request) => {
     try {
       const { tbname } = request.payload
-      const bookData = await Books.findOrder({tbname})
-      return bookData;
+      const OrderData =[]
+      const Orders = await Books.findOrder({tbname})
+      const data = Orders.map(async val => {
+         console.log(val.menuId)
+        const menu = await Books.findOnemenu({_id:val.menuId})
+              OrderData.push({
+                total: val.total,
+                munuName: menu.title,
+                menuPrice: menu.price,
+                menuImg: menu.pathImage,
+                imgName: menu.imgName
+              })
+      })
+      const promiseOrders = await Promise.all(data)
+      return OrderData;
     } catch (err) {
       console.log(err)
     }
   }
 }
-// แสดง order ทั้งหมดที่ลูกค้าสั่ง ที่ยังไม่ได้ส่ง  ให้ครัวดู
-const AllOrder = {
+// แสดง order ทั้งหมดที่ลูกค้าสั่ง ที่ยังไม่ได้ส่ง  ให้ครัวดู(ได้ใช้รึเปล่า? ยังไม่รู้ มันใช้ทำอะไรนะ?)
+const customerOrder = {
   auth: false,
   handler: async (request) => {
     try {
@@ -322,23 +364,39 @@ const AllOrder = {
   }
 }
 
+// แสดง Order ให้ครัวดู โดย โดยแสดงว่า แต่ละโต้ะมี Order อะไรบ้าง
 const getOrders = {
   auth: false,
   handler: async (request, h) => {
     try {
       const getTables = await Books.findTable({})
-      let Orders = []
-      const getOrders = getTables.map( async val => {
-        const Order = await Books.findOrder({tbname:val.name})
-        if(!_.isEmpty(Order)){
-          Orders.push({tbname : val.name,
-            order : Order})
-          return null
-        }
+      let TablesOrders = []
+      const mapTables = getTables.map( async (val,index) => {
+        const orders = await Books.findOrder({tbname:val.name})
+          let customerOrders = []
+          if(!_.isEmpty(orders)){
+            const mapOrder = orders.map( async val => {
+              const menu = await Books.findOnemenu({_id:val.menuId})
+              customerOrders.push({
+                  _id:val._id,
+                  total: val.total,
+                  menuName: menu.title
+                })
+            })
+
+            const sendMenu = await Promise.all(mapOrder) 
+           
+            TablesOrders.push({
+              tbname : val.name,
+              customerOrders
+                 })
+                     } 
       })
-      // คำสั่ง ให้ทำ Promise ทั้งหมดให้เส็จ(ไม่ได้ใช้)
-      const SendOrders = await Promise.all(getOrders)
-      return Orders
+      
+      // คำสั่ง ให้ทำ Promise ทั้งหมดให้เสร็จ
+      const SendOrders = await Promise.all(mapTables)
+      
+      return TablesOrders
     } catch (error) {
       log.error(error)
       const res = Response.implementError(transaction, lang)
@@ -353,11 +411,11 @@ const Order_statusUpdate = {
   handler: async (request) => {
     try {
       const { data } = request.payload
-      let isUpdate = false
+      let isUpdate = "ยังไม่อัพเดทครับ"
       for(let {_id}of data){
         const Update = await Books.upOrderStatus({_id,status:false})
         if(Update.modifiedCount == 1){
-           isUpdate = true
+           isUpdate = "อัพเดทแล้วครับ"
         }
       }
       return isUpdate
@@ -366,10 +424,12 @@ const Order_statusUpdate = {
     }
   }
 }
-//Order End
+//Order End  ------------------------------------------------------------------------------------------------------------------------
 
 
-//booking start
+
+
+//booking start ---------------------------------------------------------------------------------------------------------------------
   //สร้าง Booking
 const createbooking = {
   auth: false,
@@ -378,8 +438,7 @@ const createbooking = {
       const { bktable, bkname ,bknumber, bkcustomer,bktime ,isWalkIn , isBooking} = await request.payload
       if(_.isEmpty(bktable)){
         const res ={
-          status: "Error",
-          text: "ชื่อโต้ะ is emty!"
+          text: "ต้องมีชื่อโต้ะ"
         }
         return res
        }
@@ -450,7 +509,6 @@ const updateBklate = {
       }
     }
   }
-
   //แสดง Booking ทั้งหมด
 const findAllBooking = {
     auth: false,
@@ -464,7 +522,7 @@ const findAllBooking = {
       }
     }
 }
-  //ใช้อัพเดทสถานะ bkstatus ของ booking กับ table เพื่อบอกว่า ลูกค้า Check Out แล้วและ โต้ะว่างแล้ว (น่าทำงานตอนเช็คเอ้าท)
+  //ใช้อัพเดทสถานะ bkstatus ของ booking กับ table เพื่อบอกว่า ลูกค้า Check Out หรือ Check In แล้ว
 const bkstatus_update = {
   auth: false,
   handler: async (request) => {
@@ -498,7 +556,13 @@ const findOneBooking = {
       console.log(bktable,bktime)
       let res = ""
       if(_.isEmpty(bktime)){
-        res = " ขาดตัวแปรเวลา หน่ะ ไม่ต้องกังวล"
+        res = " ขาดตัวแปรเวลา หน่ะ"
+        console.log(res)
+        return res
+      }
+      if(_.isEmpty(bktable)){
+        res = " ขาดตัวแปรโต้ะ หน่ะ "
+        console.log(res)
         return res
       }
       if(!_.isEmpty(bktable)&&!_.isEmpty(bktime)){
@@ -526,8 +590,7 @@ const findOneWalkin = {
     }
   }
 }
-
-  // Delete booking หน่ะ (คนที่ได้ใช้ได้ น่าจะระดับ Manager ไม่ก็ Owner เพราะมันต้องเอาข้อมูลไปทำ รายงาน Admin ไม่ควรลบได้)
+  // Delete booking หน่ะ (ยังไม่ได้ใช้)
 const deleteBooking = {
   auth: false,
   handler: async (request) => {
@@ -540,9 +603,12 @@ const deleteBooking = {
     }
   }
 }
-//booking end
+//booking end -----------------------------------------------------------------------------------------------------------------------
 
-// Category start
+
+
+
+// Category start--------------------------------------------------------------------------------------------------------------------
     //สร้างหมวดหมู่
 const createCategory = {
   auth: false,
@@ -551,14 +617,12 @@ const createCategory = {
       const { category_name ,category_id } = request.payload
       if(_.isEmpty(category_name)){
           const res ={
-            status: "Error",
             text: "Catagory Name is emty!"
           }
           return res
       }
       if(_.isEmpty(category_id)){
         const res ={
-          status: "Error",
           text: "Catagory ID is emty!"
         }
         return res
@@ -573,8 +637,7 @@ const createCategory = {
     } catch (err) {
       if(err.code == 11000){
         const res = {
-          text: 'this Category Already Exist',
-          error: true
+          text: 'this Category Already Exist'
                    }
       return res
       }
@@ -616,7 +679,6 @@ const updateCategory = {
     }
   }
 }
-
 const deleteCategory = {
   auth: false,
   handler: async (request) => {
@@ -629,9 +691,11 @@ const deleteCategory = {
     }
   }
 }
-// Category End
+// Category End---------------------------------------------------------------------------------------------------------------------
 
-// bookingTime
+
+
+// bookingTime ----------------------------------------------------------------------------------------------------------------------
 const createTime = {
   auth: false,
   handler: async (request) => {
@@ -653,7 +717,6 @@ const createTime = {
     }
   }
 }
-
 const findBktime = {
   auth: false,
   handler: async (request) =>{
@@ -665,7 +728,6 @@ const findBktime = {
     }
   }
 }
-
 const Bktime = {
   auth: false,
   handler: async (request) =>{
@@ -694,7 +756,6 @@ const Bktime = {
     }
   }
 }
-
 const deleteBktime = {
   auth: false,
   handler: async (request) => {
@@ -713,10 +774,11 @@ const deleteBktime = {
     }
   }
 }
-//
+//  ----------------------------------------------------------------------------------------------------------------------------------
 
 
-//table start
+
+//table start  ------------------------------------------------------------------------------------------------------------------------
 //สร้าง Table
 const createtable = {
   auth: false,
@@ -725,23 +787,22 @@ const createtable = {
       const { chair ,name} = request.payload
       if(_.isEmpty(chair)){
         const res ={
-          status: "Error",
           text: "Table Name is emty!"
-        }
-        return res
-    }
-    if(_.isEmpty(name)){
-      const res ={
-        status: "Error",
-        text: "Chair amount is emty!"
       }
       return res
-  }
+    }
+      if(_.isEmpty(name)){
+        const res ={
+          text: "Chair amount is emty!"
+      }
+      return res
+    }
       const table = {
         chair: `${chair}`,
         bkstatus: false,
+        inUse: false,
         name: `${name}`,
-      }
+                    }
       const CreateTable = await Books.createTable(table)
       return CreateTable;
     } catch (err) {
@@ -761,7 +822,6 @@ const findTable = {
     }
   }
 }
-
 // เอาไว้อัพเดท bkstatus โดยทำงานคู่กับ Create Booking สร้างบุ้คกิ้งปุ้บ ก็ให้อัพเดทว่า โต้ะ โดนจองแล้ว (ไม่ได้ใช้)
 const updateTable = {
   auth: false,
@@ -775,20 +835,23 @@ const updateTable = {
     }
   }
 }
-//table end
+//table end  --------------------------------------------------------------------------------------------------------------------------
 
-// Shop Info
+
+
+// Shop Info  -------------------------------------------------------------------------------------------------------------------------
   //สร้าง ข้อมูลร้านค้า
 const createshop = {
   auth: false,
   handler: async (request) => {
     try {
-      const { name, opentime ,closetime, image, phonenumber, facebook, line} = request.payload
+      const { name, opentime ,closetime, pathImage,imgName, phonenumber, facebook, line} = request.payload
       const Shop = {
         name: `${name}`,
         opentime: `${opentime}`,
         closetime: `${closetime}`,
-        image: `${image}`,
+        pathImage: `${pathImage}`,
+        imgName:imgName ,
         phonenumber: `${phonenumber}`,
         facebook: `${facebook}`,
         line: `${line}`,
@@ -826,17 +889,173 @@ const UpdateShop = {
     }
   }
 }
-//
+//  -----------------------------------------------------------------------------------------------------------------------------------
+
+// สร้าง QR code
+const getQRcode = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { id , tbname } = request.payload
+      if(id.length === 0 ){
+         const res = "Booking ID is Empty!"
+         return res
+      }
+
+      if(tbname.length === 0 ){
+        const res = "Table Name is Empty!"
+        return res
+     }
+      let URL = 'http://192.168.1.47:3000/Food-Lance/menu?id='+id+'&tbname='+tbname
+      console.log(URL)
+      const QR = await QRcode.toDataURL(URL)
+      const qrString = await QRcode.toString(URL,{type:'terminal'})
+      console.log(qrString)
+      return QR
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+
+createDirRecursively = (dir) => {
+  if (!fs.existsSync(dir)) {        
+      createDirRecursively(path.join(dir, ".."));
+      fs.mkdirSync(dir);
+  }
+}
+
+const excelFile = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { start, end ,bktable} = request.payload
+      const Timenow = Moment(Date.now()).format('DD.MM.YYYY')
+      let workbook = new excel.Workbook();
+
+      // Style คือ ไอ้ที่จะเอาไปแสดงใน Excel เช่น ขนาดตัวหนังสือ สีตัวหนังสือ
+      let style = workbook.createStyle({
+        font: {
+          size: 13,
+        },
+        alignment: { 
+          horizontal: 'center',
+          vertical: 'center'
+      },
+        numberFormat: '$#,##0.00; ($#,##0.00); -'
+      });
+
+      // WorkSheet คือ หน้าใน ไฟล์ Excel
+      let BookingReport = workbook.addWorksheet('Booking Report');
+      let orderReport = workbook.addWorksheet('Order Report');
+      
+      // Report ของ Booking Start-----------------------------------------------
+      // หัวข้อ Colum ต่างๆ ในหน้า Booking Report
+      BookingReport.cell(1,1).string("โต้ะ").style(style);
+      BookingReport.cell(1,2).string("ประเภทลูกค้า").style(style);
+      BookingReport.cell(1,3).string("ชื่อลูกค้า").style(style);
+      BookingReport.cell(1,4).string("เบอร์โทร").style(style);
+      BookingReport.cell(1,5).string("จำนวนลูกค้า").style(style);
+      BookingReport.cell(1,6).string("เช็คอิน").style(style);
+      BookingReport.cell(1,7).string("เช็คเอ้าต์").style(style);
+      BookingReport.cell(1,8).string("เงินที่ได้").style(style);
+      
+      orderReport.cell(1,1).string("Booking_ID").style(style);
+      orderReport.cell(1,2).string("เมนู").style(style);
+      orderReport.cell(1,3).string("จำนวน").style(style);
+      orderReport.cell(1,4).string("ราคา").style(style);
+      
+      //ความกว้างของ Column -----------------------------
+      BookingReport.column(1).setWidth(10);
+      BookingReport.column(2).setWidth(15);
+      BookingReport.column(3).setWidth(18);
+      BookingReport.column(4).setWidth(13);
+      BookingReport.column(5).setWidth(12);
+      BookingReport.column(6).setWidth(18);
+      BookingReport.column(7).setWidth(18);
+      BookingReport.column(8).setWidth(12);
+
+      orderReport.column(1).setWidth(26);
+      // ส่วนดึงข้อมูลด้วย BookingID เพื่อหา Order-------------------------------------
+      const getBooking = await Books.findBookingRP({start,end,bktable}) 
+      let bookingOrders = []                                            
+      let row = 1                                                       
+      const mapBooking = getBooking.map( async (val,index) => {         
+        const orders = await Books.findOrder({bookingId:val._id})
+          let customerOrders = []
+          let valueTotal = 0
+
+            const mapOrder = orders.map( async (order) => {
+              const menu = await Books.findOnemenu({_id:order.menuId})
+              
+              customerOrders.push({
+                  total: order.total,
+                  menuName: menu.title,
+                  menuPrice: menu.price
+                })
+                valueTotal += order.total * menu.price
+
+                // console.log(menu.price)
+                if(!_.isEmpty(orders)){
+                  row += 1
+                  let totalPrice = order.total * menu.price
+                  orderReport.cell(row,1).string(val._id.toString());
+                  orderReport.cell(row,2).string(menu.title).style(style);
+                  orderReport.cell(row,3).string(order.total).style(style);
+                  orderReport.cell(row,4).string(totalPrice+' บาท').style(style);
+                }
+            })
+            
+            const sendMenu = await Promise.all(mapOrder) 
+            bookingOrders.push({
+              customerName : val.bkname,
+              customerTable: val.bktable,
+              customerTotal: val.bkcustomer,
+              checkIn: val.checkin,
+              checkOut: val.checkout,
+              customerOrders,
+              valueTotal: valueTotal,
+                 })
+          let R = 2+index
+          BookingReport.cell(R,1).string(val.bktable).style(style);
+          BookingReport.cell(R,2).string(val.customerType).style(style);
+          BookingReport.cell(R,3).string(val.bkname).style(style);
+          BookingReport.cell(R,4).string(val.bknumber).style(style);
+          BookingReport.cell(R,5).string(val.bkcustomer).style(style);
+          const checkIn = Moment(val.checkin).tz("Asia/Bangkok").format("DD/MM/yyyy HH:mm");
+          BookingReport.cell(R,6).string(checkIn).style(style);
+          const checkOut = Moment(val.checkout).tz("Asia/Bangkok").format("DD/MM/yyyy HH:mm");
+          BookingReport.cell(R,7).string(checkOut).style(style);
+          BookingReport.cell(R,8).string(valueTotal+' บาท ').style(style);
+      })
+      const SendOrders = await Promise.all(mapBooking)
+      // Report ของ Booking End-------------------------------------------------
+
+      //เลือกจุดที่จะเก็บไฟล์และเจเนอเรท ไฟล์ Excel 
+      workbook.write('../../BE-Report/Report-'+bktable+'_'+start+'_to_'+end+'.xlsx');
+      // console.log('fileWrite: ', fileWrite)
+      const res = "Report Create!!"
+      return {bookingOrders,res}
+    } catch (error) {
+      console.log(error)
+    }
+  }
+}
+
+
 
 module.exports = {
   userSignUp,
-  testfind,
-  createmenu, findOnemenu,  findmenu, updateMenu, deletemenu,
+  testfind,Delete,
+  createmenu, findmenu,findAllmenu, updateMenu, deletemenu,
   createadmin, authadmin,  findadmin, deleteAdmin,
   createCategory, findCategory, updateCategory, deleteCategory,
-  createorder, Order, AllOrder, getOrders, Order_statusUpdate,
+  createorder, oneOrder, customerOrder, getOrders, Order_statusUpdate,
   createbooking, findAllBooking, findOneBooking, findOneWalkin, deleteBooking, bkstatus_update,updateBklate,
   createTime, findBktime, Bktime, deleteBktime,
   createtable, updateTable, findTable,
-  createshop, findShop, UpdateShop
+  createshop, findShop, UpdateShop,
+  excelFile,
+  getQRcode
 }
