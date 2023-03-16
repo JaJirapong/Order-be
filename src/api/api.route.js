@@ -80,7 +80,7 @@ const routes = [
     {
         method: 'POST',
         path: '/order',
-        config: API.oneOrder
+        config: API.customerOrder
     },
     {
         method: 'POST',
@@ -90,12 +90,17 @@ const routes = [
     {
         method: 'POST',
         path: '/All-Order',
-        config: API.customerOrder
+        config: API.oneOrder
     },
     {
         method: 'POST',
         path: '/get-Orders',
         config: API.getOrders
+    },
+    {
+        method: 'POST',
+        path: '/deliver-Orders',
+        config: API.deliverOrder
     },
     //Order End
 
@@ -213,6 +218,21 @@ const routes = [
         method: 'POST',
         path: '/show-shop',
         config: API.findShop
+    },
+    {
+        method: 'POST',
+        path: '/loop-shop',
+        config: API.createShopLoopImg
+    },
+    {
+        method: 'POST',
+        path: '/find-shop-img',
+        config: API.findImg
+    },
+    {
+        method: 'POST',
+        path: '/delete-loop',
+        config: API.deleteImg
     },
     //shopend
      

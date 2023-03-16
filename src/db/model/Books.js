@@ -7,6 +7,7 @@ const table = require('./schema/CreateTable')
 const shop = require('./schema/CreateShop')
 const Category = require('./schema/CreateCategory')
 const CreateTime = require('./schema/CreateBkTime')
+const LoopImg = require('./schema/LoopImg')
 
 const Promise = require('bluebird')
 const { query } = require('winston')
@@ -190,6 +191,46 @@ const createOrder = (data) => {
 
 const findOrder = (query = {}) => {
     return new Promise((resolve, reject) => {
+        console.log(query)
+        Order.find(query).where("status").equals(true).where("bookingId").equals(query.id)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const findReportOrder = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        console.log(query)
+        Order.find(query).where("status").equals(false)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const findDeliverOrder = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        console.log(query)
+        Order.find().where("bookingId").equals(query._id).where("tbname").equals(query.tbname).where("status").equals(false)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const allOrder = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        console.log(query)
         Order.find(query).where("status").equals(true)
             .then((result) => {
                 resolve(result)
@@ -200,9 +241,9 @@ const findOrder = (query = {}) => {
     })
 }
 
-const FinishOrder = (query = {}) => {
+const kitchenOrder = (query = {}) => {
     return new Promise((resolve, reject) => {
-        Order.find(query).where("status").equals(true)
+        Order.find(query).where("status").equals(true).where("tbname").equals(query.tbname)
             .then((result) => {
                 resolve(result)
             })
@@ -215,10 +256,9 @@ const FinishOrder = (query = {}) => {
 const upOrderStatus = (query = {}) => {
     console.log(query)
     return new Promise((resolve, reject) => {
-        const id = query._id
-        const status = query.status
-            Order.updateOne({_id:id},{$set:{
-                status: status,
+            Order.updateOne({_id:query._id},{$set:{
+                status: query.status,
+                isDeliver: query.isDeliver
       }})
           .then((result) => {
               resolve(result)
@@ -241,6 +281,31 @@ const createBooking = (data) => {
         })
     })
 }
+
+const bookingForKitchen = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        booking.find(query).where("bkstatus").equals(true)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const bookingForCheck = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        booking.findOne(query).where("bkstatus").equals(true)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
 
 const findAllBooking = (query = {}) => {
     return new Promise((resolve, reject) => {
@@ -494,6 +559,10 @@ const updateShop = (query = {}) => {
             opentime: query.opentime,
             closetime: query.closetime,
             image: query.image,
+            shopPathImage:query.shopPathImage,
+            shopImgName:query.shopImgName,
+            infoPathImage:query.infoPathImage,
+            infoImgName:query.infoImgName,
             phonenumber: query.phonenumber,
             facebook: query.facebook,
             line: query.line
@@ -506,6 +575,40 @@ const updateShop = (query = {}) => {
           })
     })
 }
+
+const shopLoopImg = (data) => {
+    return new Promise((resolve, reject) => {
+        const loopImg = new LoopImg(data)
+        loopImg.save(async (err, result) => {
+            if (err) reject(err)
+            resolve(result)
+        })
+    })
+}
+
+const findImg = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        LoopImg.find(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
+
+const deleteLoopImg = (query = {}) => {
+    return new Promise((resolve, reject) => {
+        LoopImg.deleteOne(query)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
 //shop end
 
 module.exports = {
@@ -515,11 +618,12 @@ module.exports = {
     createmenu,  findmenu, findOnemenu, updateOnemenu, deleteMenu,
     createAdmin,  findAdmin, findallAdmin, deleteAdmin,
     createCategory, findCategory, upCategorystatus, deleteCategory,
-    createOrder, findOrder, FinishOrder, upOrderStatus,
-    createBooking, findAllBooking,findTableBooking, findOneWalkin, findOneBooking, deleteBooking, update_bkstatus,
+    createOrder, findOrder, kitchenOrder,allOrder, upOrderStatus,findDeliverOrder,
+    createBooking, findAllBooking,findTableBooking, findOneWalkin,bookingForKitchen,bookingForCheck,
+                   findOneBooking, deleteBooking, update_bkstatus,
     createTime, findBktime, deleteBktime,
     createTable, updateOneTable, findTable,
-    createShop, findShop, updateShop,
-    findBookingRP
+    createShop, findShop, updateShop,shopLoopImg,deleteLoopImg,findImg,
+    findBookingRP,findReportOrder
     
 }

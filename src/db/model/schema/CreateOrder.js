@@ -16,6 +16,9 @@ const OrderSchema = new Mongoose.Schema(
         },
         bookingId :{
             type: String
+        },
+        isDeliver :{
+            type: Boolean
         }
 
     }

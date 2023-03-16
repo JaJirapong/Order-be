@@ -3,8 +3,7 @@ const Mongoose = require('mongoose')
 const ShopSchema = new Mongoose.Schema(
     {
         name: {
-            type: String,
-            unique: true
+            type: String
         },
         opentime:{
             type: String
@@ -12,10 +11,16 @@ const ShopSchema = new Mongoose.Schema(
         closetime:{
             type: String
         },
-        pathImage: { 
+        shopPathImage: { 
             type: String
          },
-         imgName: { 
+        shopImgName: { 
+            type: String
+         },
+        infoPathImage: { 
+            type: String
+         },
+        infoImgName: { 
             type: String
          },
         phonenumber:{

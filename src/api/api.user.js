@@ -62,7 +62,7 @@ const Delete = {
   auth: false,
   handler: async (request) => {
     try {
-          const Delete = await Books.TestDel({bkstatus:false})
+          const Delete = await Books.TestDel({})
       return "Delete To!";
     } catch (err) {
       console.log(err)
@@ -306,19 +306,26 @@ const createorder = {
     try {
       const { data } = request.payload
       let isCreate = "ยังไม่ได้สร้าง Order ขอรับ"
-      for(const {total, tbname ,id, idBK} of data){
-        const orders = {
-          total: `${total}`,
-          status: true,
-          tbname: `${tbname}`,
-          menuId: `${id}`,
-          bookingId: idBK
+
+      //ถ้าลูกค้ามีการ Check Out ไปแล้ว จะไม่มีการสร้าง Order
+      const isBooking = await Books.bookingForCheck({_id:data[0].idBK})
+      // ถ้ามีก็สร้าง Order
+      if(!_.isEmpty(isBooking)){
+        for(const {total, tbname ,id, idBK} of data){
+          const orders = {
+            total: `${total}`,
+            status: true,
+            tbname: `${tbname}`,
+            menuId: `${id}`,
+            bookingId: idBK
+          }
+          if(!_.isEmpty(data)){
+            isCreate = "สร้าง Order แล้วขอรับ"
         }
-        if(!_.isEmpty(data)){
-          isCreate = "สร้าง Order แล้วขอรับ"
+          const bookData = await Books.createOrder(orders)
+        }
       }
-        const bookData = await Books.createOrder(orders)
-      }
+      console.log(isCreate)
       return isCreate;
         } catch (err) {
       console.log(err)
@@ -326,22 +333,25 @@ const createorder = {
   }
 }
 // แสดง Order ที่ลูกค้าสั่ง โดยใช้ ชื่อโต้ะ เป็นตัวค้นหา
-const oneOrder = {
+const customerOrder = {
   auth: false,
   handler: async (request) => {
     try {
-      const { tbname } = request.payload
-      const OrderData =[]
-      const Orders = await Books.findOrder({tbname})
+      const { tbname , id} = request.payload
+      let OrderData =[]
+      console.log(tbname)
+      console.log(id)
+      const Orders = await Books.findOrder({tbname,id})
+
       const data = Orders.map(async val => {
-         console.log(val.menuId)
         const menu = await Books.findOnemenu({_id:val.menuId})
               OrderData.push({
                 total: val.total,
                 munuName: menu.title,
                 menuPrice: menu.price,
                 menuImg: menu.pathImage,
-                imgName: menu.imgName
+                imgName: menu.imgName,
+                isTrue: false
               })
       })
       const promiseOrders = await Promise.all(data)
@@ -352,12 +362,39 @@ const oneOrder = {
   }
 }
 // แสดง order ทั้งหมดที่ลูกค้าสั่ง ที่ยังไม่ได้ส่ง  ให้ครัวดู(ได้ใช้รึเปล่า? ยังไม่รู้ มันใช้ทำอะไรนะ?)
-const customerOrder = {
+const oneOrder = {
   auth: false,
   handler: async (request) => {
     try {
-      const bookData = await Books.FinishOrder({})
-      return bookData;
+      const bookData = await Books.allOrder({})
+      return "bookData";
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+// แสดง ออร์เดอ ทั้งหมดที่ ส่งแล้ว
+const deliverOrder = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      let OrderData =[]
+      const { tbname , id} = request.payload
+      const Orders = await Books.findDeliverOrder({tbname,_id:id})
+      const data = Orders.map(async val => {
+        const menu = await Books.findOnemenu({_id:val.menuId})
+              OrderData.push({
+                total: val.total,
+                munuName: menu.title,
+                menuPrice: menu.price,
+                menuImg: menu.pathImage,
+                imgName: menu.imgName,
+                isTrue: true
+              })
+      })
+      const promiseOrders = await Promise.all(data)
+      console.log(OrderData.length)
+      return OrderData;
     } catch (err) {
       console.log(err)
     }
@@ -370,9 +407,12 @@ const getOrders = {
   handler: async (request, h) => {
     try {
       const getTables = await Books.findTable({})
+      const getBooking = await Books.bookingForKitchen({})
       let TablesOrders = []
-      const mapTables = getTables.map( async (val,index) => {
-        const orders = await Books.findOrder({tbname:val.name})
+      // console.log(getBooking)
+      const mapTables = getBooking.map( async (val,index) => {
+        const orders = await Books.kitchenOrder({tbname:val.bktable})
+        console.log(orders)
           let customerOrders = []
           if(!_.isEmpty(orders)){
             const mapOrder = orders.map( async val => {
@@ -387,12 +427,13 @@ const getOrders = {
             const sendMenu = await Promise.all(mapOrder) 
            
             TablesOrders.push({
-              tbname : val.name,
+              tbname : val.bktable,
               customerOrders
                  })
                      } 
       })
       
+      console.log(TablesOrders)
       // คำสั่ง ให้ทำ Promise ทั้งหมดให้เสร็จ
       const SendOrders = await Promise.all(mapTables)
       
@@ -424,6 +465,8 @@ const Order_statusUpdate = {
     }
   }
 }
+
+
 //Order End  ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -471,6 +514,8 @@ const createbooking = {
        const upDateTable = await Books.updateOneTable({bktable:booking.bktable,bkstatus:booking.bkstatus})
        return bookData;
        }
+
+       console.log(isWalkIn)
 
        if(isWalkIn === true){
         const booking = {
@@ -657,7 +702,7 @@ const findCategory = {
     }
   }
 }
-   //อัพเดท Category ทีละหลายๆตัว  เช่น ติ้ก3 อัพเดท 3
+   //อัพเดท Category ทีละหลายๆตัว  เช่น ติ้ก 3 อัพเดท 3
 const updateCategory = {
   auth: false,
   handler: async (request) => {
@@ -845,16 +890,18 @@ const createshop = {
   auth: false,
   handler: async (request) => {
     try {
-      const { name, opentime ,closetime, pathImage,imgName, phonenumber, facebook, line} = request.payload
+      const { name, opentime ,closetime, pathImage,imgName,infoPathImage,infoImgName, phonenumber, facebook, line} = request.payload
       const Shop = {
-        name: `${name}`,
-        opentime: `${opentime}`,
-        closetime: `${closetime}`,
-        pathImage: `${pathImage}`,
-        imgName:imgName ,
-        phonenumber: `${phonenumber}`,
-        facebook: `${facebook}`,
-        line: `${line}`,
+        name:name,
+        opentime: opentime,
+        closetime: closetime,
+        shopPathImage: pathImage,
+        shopImgName: imgName ,
+        infoPathImage:infoPathImage,
+        infoImgName:infoImgName,
+        phonenumber: phonenumber,
+        facebook: facebook,
+        line: line,
       }
       const CreateShop = await Books.createShop(Shop)
       return CreateShop;
@@ -881,11 +928,59 @@ const UpdateShop = {
   auth: false,
   handler: async (request) => {
     try {
-      const {_id, opentime, closetime, image, phonenumber, facebook, line} = request.payload
-      const upDateTable = await Books.updateShop({_id,opentime, closetime, image, phonenumber, facebook, line})
+      const {_id ,shopPathImage,shopImgName,infoPathImage,infoImgName} = request.payload
+      console.log(_id)
+      const upDateTable = await Books.updateShop({_id ,shopPathImage,shopImgName,infoPathImage,infoImgName})
       return upDateTable
     } catch (err) {
       console.log(err)
+    }
+  }
+}
+
+const createShopLoopImg = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      // const { data } = request.payload
+      const { pathImage, imgName } = request.payload
+      let isCreate = "ยังไม่สร้างครับ"
+      // for(let {pathImage,imgName} of data){
+        const imgData = {
+          pathImage: pathImage,
+          imgName: imgName
+        }
+        const image = await Books.shopLoopImg(imgData)
+      // }
+
+      return image;
+    } catch (err) {
+      console.log(err)
+    }
+  }
+}
+
+const findImg = {
+  auth: false,
+  handler: async (request) => {
+    try {
+        const data = await Books.findImg({})
+      return data
+    } catch(err) {
+       console.log(err)
+    }
+  }
+}
+
+const deleteImg = {
+  auth: false,
+  handler: async (request) => {
+    try {
+      const { _id } = request.payload
+        const deleteTime = await Books.deleteLoopImg({_id})
+      return deleteTime
+    } catch(err) {
+       console.log(err)
     }
   }
 }
@@ -906,7 +1001,7 @@ const getQRcode = {
         const res = "Table Name is Empty!"
         return res
      }
-      let URL = 'http://192.168.1.47:3000/Food-Lance/menu?id='+id+'&tbname='+tbname
+      let URL = 'http://192.168.1.35:3000/Food-Lance/menu?id='+id+'&tbname='+tbname
       console.log(URL)
       const QR = await QRcode.toDataURL(URL)
       const qrString = await QRcode.toString(URL,{type:'terminal'})
@@ -931,6 +1026,10 @@ const excelFile = {
   handler: async (request) => {
     try {
       const { start, end ,bktable} = request.payload
+      console.log(start,end,bktable)
+      if(_.isEmpty(start)||_.isEmpty(end)||_.isEmpty(bktable)){
+        return "อาจจะไม่มี ค่าวันในการค้นหา หรือ ไม่มีค่า โต้ะ"
+     }
       const Timenow = Moment(Date.now()).format('DD.MM.YYYY')
       let workbook = new excel.Workbook();
 
@@ -977,12 +1076,19 @@ const excelFile = {
       BookingReport.column(8).setWidth(12);
 
       orderReport.column(1).setWidth(26);
+      orderReport.column(2).setWidth(18);
       // ส่วนดึงข้อมูลด้วย BookingID เพื่อหา Order-------------------------------------
-      const getBooking = await Books.findBookingRP({start,end,bktable}) 
-      let bookingOrders = []                                            
-      let row = 1                                                       
+      const getBooking = await Books.findBookingRP({start,end,bktable})
+      let bookingOrders = []                                           
+      let row = 1
+      
+      if(_.isEmpty(getBooking)){
+        return "ไม่มีข้อมูล Booking ครับ (ถ้าจะหาวันที่ 10 วัน end ต้อง เป็นวันที่ 11 หน่ะ ไม่รู้ทำไม)"
+     }
+
       const mapBooking = getBooking.map( async (val,index) => {         
-        const orders = await Books.findOrder({bookingId:val._id})
+        const orders = await Books.findReportOrder({bookingId:val._id})
+
           let customerOrders = []
           let valueTotal = 0
 
@@ -996,7 +1102,6 @@ const excelFile = {
                 })
                 valueTotal += order.total * menu.price
 
-                // console.log(menu.price)
                 if(!_.isEmpty(orders)){
                   row += 1
                   let totalPrice = order.total * menu.price
@@ -1033,8 +1138,8 @@ const excelFile = {
       // Report ของ Booking End-------------------------------------------------
 
       //เลือกจุดที่จะเก็บไฟล์และเจเนอเรท ไฟล์ Excel 
-      workbook.write('../../BE-Report/Report-'+bktable+'_'+start+'_to_'+end+'.xlsx');
-      // console.log('fileWrite: ', fileWrite)
+      const fileWrite = workbook.write('../../BE-Report/Report-'+bktable+'_'+start+'_to_'+end+'.xlsx');
+
       const res = "Report Create!!"
       return {bookingOrders,res}
     } catch (error) {
@@ -1051,11 +1156,11 @@ module.exports = {
   createmenu, findmenu,findAllmenu, updateMenu, deletemenu,
   createadmin, authadmin,  findadmin, deleteAdmin,
   createCategory, findCategory, updateCategory, deleteCategory,
-  createorder, oneOrder, customerOrder, getOrders, Order_statusUpdate,
+  createorder, oneOrder, customerOrder, getOrders, Order_statusUpdate,deliverOrder,
   createbooking, findAllBooking, findOneBooking, findOneWalkin, deleteBooking, bkstatus_update,updateBklate,
   createTime, findBktime, Bktime, deleteBktime,
   createtable, updateTable, findTable,
-  createshop, findShop, UpdateShop,
+  createshop, createShopLoopImg, findShop, UpdateShop, deleteImg, findImg,
   excelFile,
   getQRcode
 }
