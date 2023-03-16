@@ -305,7 +305,7 @@ const createorder = {
   handler: async (request) => {
     try {
       const { data } = request.payload
-      let isCreate = "ยังไม่ได้สร้าง Order ขอรับ"
+      let isCreate = "ไม่เจอ Booking อาจจะเพราะ Check Out แล้ว หรือ data._id :"+data[0].idBK+""
 
       //ถ้าลูกค้ามีการ Check Out ไปแล้ว จะไม่มีการสร้าง Order
       const isBooking = await Books.bookingForCheck({_id:data[0].idBK})
@@ -332,7 +332,7 @@ const createorder = {
         }
   }
 }
-// แสดง Order ที่ลูกค้าสั่ง โดยใช้ ชื่อโต้ะ เป็นตัวค้นหา
+// แสดง Order ที่ลูกค้าสั่ง ที่ครัวยังไม่เสิร์ฟ
 const customerOrder = {
   auth: false,
   handler: async (request) => {
@@ -373,7 +373,7 @@ const oneOrder = {
     }
   }
 }
-// แสดง ออร์เดอ ทั้งหมดที่ ส่งแล้ว
+// แสดง ออร์เดอ ทั้งหมดของลูกค้าที่ครัวเสิร์ฟแล้ว
 const deliverOrder = {
   auth: false,
   handler: async (request) => {
@@ -400,18 +400,15 @@ const deliverOrder = {
     }
   }
 }
-
-// แสดง Order ให้ครัวดู โดย โดยแสดงว่า แต่ละโต้ะมี Order อะไรบ้าง
+// แสดง Order ให้ครัวดู โดย โดยแสดงว่า แต่ละโต้ะมี Order อะไรบ้าง เลือกเฉพาะ Booking ที่มีสถานะการ booking = true
 const getOrders = {
   auth: false,
   handler: async (request, h) => {
     try {
-      const getTables = await Books.findTable({})
       const getBooking = await Books.bookingForKitchen({})
       let TablesOrders = []
-      // console.log(getBooking)
       const mapTables = getBooking.map( async (val,index) => {
-        const orders = await Books.kitchenOrder({tbname:val.bktable})
+        const orders = await Books.kitchenOrder({tbname:val.bktable,bookingId:val._id})
         console.log(orders)
           let customerOrders = []
           if(!_.isEmpty(orders)){
@@ -433,7 +430,6 @@ const getOrders = {
                      } 
       })
       
-      console.log(TablesOrders)
       // คำสั่ง ให้ทำ Promise ทั้งหมดให้เสร็จ
       const SendOrders = await Promise.all(mapTables)
       
@@ -445,7 +441,6 @@ const getOrders = {
     }
   }
 }
-
 // ครัวอัพเดทสถานะ ออร์เดอร์
 const Order_statusUpdate = {
   auth: false,
@@ -465,12 +460,7 @@ const Order_statusUpdate = {
     }
   }
 }
-
-
 //Order End  ------------------------------------------------------------------------------------------------------------------------
-
-
-
 
 //booking start ---------------------------------------------------------------------------------------------------------------------
   //สร้าง Booking
@@ -584,6 +574,7 @@ const bkstatus_update = {
       if(isCheckOut === true){
         const BKUpdate = await Books.update_bkstatus({_id,bkstatus,checkOut})
         const TbUpdate = await Books.updateOneTable({bktable,inUse:notUse,bkstatus})
+        const deleteUndeliver = await Books.deleteUndeliver({_id})
         return "Booking and Table สถานะการ booking อัพเดทแล้ว"
       }
       return "Error ไม่ใช่ทั้ง Check In และ Check Out"
@@ -923,7 +914,7 @@ const findShop = {
   }
 }
 
-// Update Shop (ยังไม่ได้เอาไปใช้งาน)
+// Update Shop 
 const UpdateShop = {
   auth: false,
   handler: async (request) => {
@@ -998,8 +989,8 @@ const getQRcode = {
       }
 
       if(tbname.length === 0 ){
-        const res = "Table Name is Empty!"
-        return res
+         const res = "Table Name is Empty!"
+         return res
      }
       let URL = 'http://192.168.1.35:3000/Food-Lance/menu?id='+id+'&tbname='+tbname
       console.log(URL)

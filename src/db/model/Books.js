@@ -26,7 +26,7 @@ const create = (data) => {
 }
 const TestDel = (query = {}) => {
     return new Promise((resolve, reject) => {
-        Order.deleteMany(query)
+        booking.deleteMany(query)
             .then((result) => {
                 resolve(result)
             })
@@ -268,6 +268,19 @@ const upOrderStatus = (query = {}) => {
           })
     })
 } 
+
+const deleteUndeliver = (query = {}) => {
+    console.log(query)
+    return new Promise((resolve, reject) => {
+        Order.deleteMany().where("status").equals(true).where("bookingId").equals(query._id)
+            .then((result) => {
+                resolve(result)
+            })
+            .catch((err) => {
+                reject(err)
+            })
+    })
+}
 //order End
 
 //booking start
@@ -618,7 +631,7 @@ module.exports = {
     createmenu,  findmenu, findOnemenu, updateOnemenu, deleteMenu,
     createAdmin,  findAdmin, findallAdmin, deleteAdmin,
     createCategory, findCategory, upCategorystatus, deleteCategory,
-    createOrder, findOrder, kitchenOrder,allOrder, upOrderStatus,findDeliverOrder,
+    createOrder, findOrder, kitchenOrder,allOrder, upOrderStatus,findDeliverOrder,deleteUndeliver,
     createBooking, findAllBooking,findTableBooking, findOneWalkin,bookingForKitchen,bookingForCheck,
                    findOneBooking, deleteBooking, update_bkstatus,
     createTime, findBktime, deleteBktime,
