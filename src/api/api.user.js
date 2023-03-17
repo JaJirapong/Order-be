@@ -13,6 +13,7 @@ const end = require('date-fns/endOfDay')
 const start = require('date-fns/startOfDay')
 const { indexOf } = require('underscore')
 const QRcode = require('qrcode')
+const Cookies = require('js-cookie')
 
 
 

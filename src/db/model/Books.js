@@ -26,7 +26,7 @@ const create = (data) => {
 }
 const TestDel = (query = {}) => {
     return new Promise((resolve, reject) => {
-        booking.deleteMany(query)
+        Admin.deleteMany(query)
             .then((result) => {
                 resolve(result)
             })
