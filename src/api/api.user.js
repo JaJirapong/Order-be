@@ -13,9 +13,7 @@ const end = require('date-fns/endOfDay')
 const start = require('date-fns/startOfDay')
 const { indexOf } = require('underscore')
 const QRcode = require('qrcode')
-// const multer  = require('multer')
-// const storage = multer.memoryStorage();
-// const upload = multer({ storage: storage });
+
 
 
 const jwt_secret = 'aawdklakfijklkgjkdfawd123132343232@#$@##dq'
@@ -992,7 +990,7 @@ const getQRcode = {
          const res = "Table Name is Empty!"
          return res
      }
-      let URL = 'http://192.168.1.35:3000/Food-Lance/menu?id='+id+'&tbname='+tbname
+      let URL = 'http://192.168.1.40:3000/Food-Lance/menu?id='+id+'&tbname='+tbname
       console.log(URL)
       const QR = await QRcode.toDataURL(URL)
       const qrString = await QRcode.toString(URL,{type:'terminal'})
@@ -1003,7 +1001,6 @@ const getQRcode = {
     }
   }
 }
-
 
 createDirRecursively = (dir) => {
   if (!fs.existsSync(dir)) {        
@@ -1138,8 +1135,6 @@ const excelFile = {
     }
   }
 }
-
-
 
 module.exports = {
   userSignUp,
