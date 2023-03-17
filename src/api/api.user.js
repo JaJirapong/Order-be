@@ -72,7 +72,7 @@ const Delete = {
 
 
 // Menu Start -------------------------------------------------------------------------------------------------------
-   // สร้าง Menu
+
 const createmenu = {
   auth: false,
   handler: async (request) => {
@@ -109,7 +109,7 @@ const createmenu = {
     }
   }
 }
-  // แสดงเมนู ด้วยหมวดหมู่
+
 const findmenu = {
   auth: false,
   handler: async (request) => {
@@ -134,7 +134,7 @@ const findAllmenu = {
     }
   }
 }
-  // ลบทีละหลายเมนู
+
 const deletemenu ={
   auth: false,
   handler: async (request) => {
@@ -155,7 +155,7 @@ const deletemenu ={
     }
   }
 }
-  // อัพเดท เมนู
+
 const updateMenu = {
   auth: false,
   handler: async (request) => {
@@ -174,7 +174,7 @@ const updateMenu = {
 
 
 // Admin Start ------------------------------------------------------------------------------------------------------------------
-// สร้าง Admin (ยังไม่รู้ว่า ใครเข้าใช้)
+//(ยังไม่รู้ว่า ใครเข้าใช้)
 const createadmin = {
   auth: false,
   handler: async (request) => {
@@ -229,7 +229,7 @@ const createadmin = {
     }
   }
 }
-// Login admin
+
 const authadmin = {
   auth: false,
   handler: async (request) => {
@@ -240,17 +240,15 @@ const authadmin = {
         const res = "error user is not correct!!"
         return res
       }
-      //รับข้อมูล username,password มาแล้วเอา username มาค้นข้อมูลใน database ได้มาแล้วก็เอา password ที่รับมาจากผู้ใช้
-      //มาเทียบกับ password ที่ได้มาจาก Database โดยใช้ Bcrypt ถอดรหัสและเทียบ
+      
       if(await bcrypt.compare(password, AdminData.password)){
-        // ส่งข้อมูลแบบธรรมดา
         const data = {
           id: AdminData._id,
           name:AdminData.name,
           position: AdminData.position,
           auth : true
         }
-        // ส่งข้อมูลแบบ Token (ยังทำไม่ได้ //)
+        
         const token = jwt.sign({
           id: AdminData._id,
           position: AdminData.position
@@ -263,7 +261,7 @@ const authadmin = {
     }
   }
 }
-// ผู้ใช้ระดับไหนถึงจะใช้เส้นนี้ได้ (ผู้จัดการ?)
+//(ผู้จัดการ?)
 const deleteAdmin ={
   auth: false,
   handler: async (request) => {
@@ -280,7 +278,7 @@ const deleteAdmin ={
     }
   }
 }
-// แสดง admin ทั้งหมด
+
 const findadmin = {
   auth: false,
   handler: async (request) => {
@@ -298,7 +296,7 @@ const findadmin = {
 
 
 //Order Start -----------------------------------------------------------------------------------------------------------------------
-//สร้าง Order รับข้อมูลแบบ Array เพื่อรองรับการสั่งทีละเยอะๆ ของลูกค้า
+
 const createorder = {
   auth: false,
   handler: async (request) => {
@@ -331,7 +329,7 @@ const createorder = {
         }
   }
 }
-// แสดง Order ที่ลูกค้าสั่ง ที่ครัวยังไม่เสิร์ฟ
+
 const customerOrder = {
   auth: false,
   handler: async (request) => {
@@ -360,7 +358,7 @@ const customerOrder = {
     }
   }
 }
-// แสดง order ทั้งหมดที่ลูกค้าสั่ง ที่ยังไม่ได้ส่ง  ให้ครัวดู(ได้ใช้รึเปล่า? ยังไม่รู้ มันใช้ทำอะไรนะ?)
+
 const oneOrder = {
   auth: false,
   handler: async (request) => {
@@ -372,7 +370,7 @@ const oneOrder = {
     }
   }
 }
-// แสดง ออร์เดอ ทั้งหมดของลูกค้าที่ครัวเสิร์ฟแล้ว
+
 const deliverOrder = {
   auth: false,
   handler: async (request) => {
@@ -399,7 +397,7 @@ const deliverOrder = {
     }
   }
 }
-// แสดง Order ให้ครัวดู โดย โดยแสดงว่า แต่ละโต้ะมี Order อะไรบ้าง เลือกเฉพาะ Booking ที่มีสถานะการ booking = true
+
 const getOrders = {
   auth: false,
   handler: async (request, h) => {
@@ -440,7 +438,7 @@ const getOrders = {
     }
   }
 }
-// ครัวอัพเดทสถานะ ออร์เดอร์
+
 const Order_statusUpdate = {
   auth: false,
   handler: async (request) => {
@@ -462,7 +460,7 @@ const Order_statusUpdate = {
 //Order End  ------------------------------------------------------------------------------------------------------------------------
 
 //booking start ---------------------------------------------------------------------------------------------------------------------
-  //สร้าง Booking
+
 const createbooking = {
   auth: false,
   handler: async (request) => {
@@ -529,7 +527,7 @@ const createbooking = {
     }
   }
 }
-  // Update สถานะ bklate เป็น true สถานะการจอง = false  เพื่อแจ้งว่าลูกค้าคนนี้มาช้า (admin ตัดสินใจเอง)
+
 const updateBklate = {
     auth: false,
     handler: async (request) => {
@@ -543,7 +541,7 @@ const updateBklate = {
       }
     }
   }
-  //แสดง Booking ทั้งหมด
+
 const findAllBooking = {
     auth: false,
     handler: async (request) =>{
@@ -556,7 +554,7 @@ const findAllBooking = {
       }
     }
 }
-  //ใช้อัพเดทสถานะ bkstatus ของ booking กับ table เพื่อบอกว่า ลูกค้า Check Out หรือ Check In แล้ว
+
 const bkstatus_update = {
   auth: false,
   handler: async (request) => {
@@ -582,7 +580,7 @@ const bkstatus_update = {
     }
   }
 }
-  //แสดง 1 Booking
+
 const findOneBooking = {
   auth: false,
   handler: async (request) =>{
@@ -625,7 +623,7 @@ const findOneWalkin = {
     }
   }
 }
-  // Delete booking หน่ะ (ยังไม่ได้ใช้)
+  // (ยังไม่ได้ใช้)
 const deleteBooking = {
   auth: false,
   handler: async (request) => {
@@ -644,7 +642,7 @@ const deleteBooking = {
 
 
 // Category start--------------------------------------------------------------------------------------------------------------------
-    //สร้างหมวดหมู่
+
 const createCategory = {
   auth: false,
   handler: async (request) => {
@@ -680,7 +678,7 @@ const createCategory = {
     }
   }
 }
-    //แสดงหมวดหมู่ ทั้งหมด
+
 const findCategory = {
   auth: false,
   handler: async (request) =>{
@@ -692,7 +690,7 @@ const findCategory = {
     }
   }
 }
-   //อัพเดท Category ทีละหลายๆตัว  เช่น ติ้ก 3 อัพเดท 3
+
 const updateCategory = {
   auth: false,
   handler: async (request) => {
@@ -814,7 +812,7 @@ const deleteBktime = {
 
 
 //table start  ------------------------------------------------------------------------------------------------------------------------
-//สร้าง Table
+
 const createtable = {
   auth: false,
   handler: async (request) => {
@@ -845,7 +843,7 @@ const createtable = {
     }
   }
 }
- //Find Table
+
 const findTable = {
   auth: false,
   handler: async (request) =>{
@@ -857,7 +855,7 @@ const findTable = {
     }
   }
 }
-// เอาไว้อัพเดท bkstatus โดยทำงานคู่กับ Create Booking สร้างบุ้คกิ้งปุ้บ ก็ให้อัพเดทว่า โต้ะ โดนจองแล้ว (ไม่ได้ใช้)
+//(ไม่ได้ใช้)
 const updateTable = {
   auth: false,
   handler: async (request) => {
@@ -875,7 +873,7 @@ const updateTable = {
 
 
 // Shop Info  -------------------------------------------------------------------------------------------------------------------------
-  //สร้าง ข้อมูลร้านค้า
+
 const createshop = {
   auth: false,
   handler: async (request) => {
@@ -913,7 +911,6 @@ const findShop = {
   }
 }
 
-// Update Shop 
 const UpdateShop = {
   auth: false,
   handler: async (request) => {
@@ -1022,7 +1019,6 @@ const excelFile = {
       const Timenow = Moment(Date.now()).format('DD.MM.YYYY')
       let workbook = new excel.Workbook();
 
-      // Style คือ ไอ้ที่จะเอาไปแสดงใน Excel เช่น ขนาดตัวหนังสือ สีตัวหนังสือ
       let style = workbook.createStyle({
         font: {
           size: 13,
@@ -1034,12 +1030,11 @@ const excelFile = {
         numberFormat: '$#,##0.00; ($#,##0.00); -'
       });
 
-      // WorkSheet คือ หน้าใน ไฟล์ Excel
+
       let BookingReport = workbook.addWorksheet('Booking Report');
       let orderReport = workbook.addWorksheet('Order Report');
       
       // Report ของ Booking Start-----------------------------------------------
-      // หัวข้อ Colum ต่างๆ ในหน้า Booking Report
       BookingReport.cell(1,1).string("โต้ะ").style(style);
       BookingReport.cell(1,2).string("ประเภทลูกค้า").style(style);
       BookingReport.cell(1,3).string("ชื่อลูกค้า").style(style);
@@ -1054,7 +1049,6 @@ const excelFile = {
       orderReport.cell(1,3).string("จำนวน").style(style);
       orderReport.cell(1,4).string("ราคา").style(style);
       
-      //ความกว้างของ Column -----------------------------
       BookingReport.column(1).setWidth(10);
       BookingReport.column(2).setWidth(15);
       BookingReport.column(3).setWidth(18);
@@ -1066,7 +1060,7 @@ const excelFile = {
 
       orderReport.column(1).setWidth(26);
       orderReport.column(2).setWidth(18);
-      // ส่วนดึงข้อมูลด้วย BookingID เพื่อหา Order-------------------------------------
+
       const getBooking = await Books.findBookingRP({start,end,bktable})
       let bookingOrders = []                                           
       let row = 1
@@ -1126,7 +1120,6 @@ const excelFile = {
       const SendOrders = await Promise.all(mapBooking)
       // Report ของ Booking End-------------------------------------------------
 
-      //เลือกจุดที่จะเก็บไฟล์และเจเนอเรท ไฟล์ Excel 
       const fileWrite = workbook.write('../../BE-Report/Report-'+bktable+'_'+start+'_to_'+end+'.xlsx');
 
       const res = "Report Create!!"
